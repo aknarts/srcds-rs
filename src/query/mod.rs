@@ -1,6 +1,7 @@
 use byteorder::{ByteOrder, LittleEndian};
 
 use std::net::{UdpSocket, ToSocketAddrs};
+use std::time::Duration;
 
 use error::{Error, Result};
 
@@ -22,6 +23,9 @@ pub struct Query {
 impl Query {
     pub fn new() -> Result<Query> {
         let socket = UdpSocket::bind("0.0.0.0:0")?;
+        socket.set_read_timeout(Some(Duration::new(5, 0)))?;
+        socket.set_write_timeout(Some(Duration::new(5, 0)))?;
+
         Ok(Query {
             socket: socket
         })
