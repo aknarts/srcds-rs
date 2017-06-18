@@ -45,7 +45,7 @@ impl Query {
             self.socket.peek(&mut data)?;
 
             let id = LittleEndian::read_i32(&data[4..8]);
-            let total_packets: usize = data[9] as usize;
+            let total_packets: usize = data[8] as usize;
             let switching_size: usize = LittleEndian::read_i16(&data[10..12]) as usize;
 
             let mut all_packets: Vec<UnorderedPacket> = Vec::with_capacity(total_packets);
@@ -62,10 +62,9 @@ impl Query {
                 all_packets.push(UnorderedPacket {
                     number: data[10],
                     payload: Vec::from(&data[12..])
-
                 });
 
-                if (all_packets.len() - 1) == total_packets { break; }
+                if (all_packets.len()) == total_packets { break; }
             }
 
             // now we reconstruct the packet
@@ -78,6 +77,9 @@ impl Query {
             for p in all_packets {
                 joined.extend(p.payload);
             }
+
+            // discard first 4 header bytes
+            joined.remove(0); joined.remove(0); joined.remove(0); joined.remove(0);
 
             Ok(joined)
         } else {
