@@ -1,12 +1,14 @@
-use byteorder::{ByteOrder, LittleEndian};
+use byteorder::{ByteOrder, LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use std::net::{UdpSocket, ToSocketAddrs};
 use std::time::Duration;
+use std::io::{Cursor, Write};
 
 use error::{Error, Result};
 
 mod info;
 mod players;
+mod rules;
 
 const SINGLE_PACKET: i32 = -1;
 const MULTI_PACKET: i32 = -2;
@@ -91,4 +93,28 @@ impl Query {
             Err(Error::Other("Unknown packet header"))
         }
     }
+}
+
+fn do_challenge_request<A: ToSocketAddrs>(query: &mut Query,
+                                          addr: A, header: &[u8]) -> Result<Vec<u8>> {
+    let packet = Vec::with_capacity(9);
+    let mut packet = Cursor::new(packet);
+
+    packet.write_all(header)?;
+    packet.write_i32::<LittleEndian>(-1)?;
+    let data = query.send(packet.get_ref(), &addr)?;
+    let mut data = Cursor::new(data);
+
+    let header = data.read_u8()?;
+    if header != 'A' as u8 {
+        return Err(Error::InvalidResponse);
+    }
+
+    let challenge = data.read_i32::<LittleEndian>()?;
+
+    packet.set_position(5);
+    packet.write_i32::<LittleEndian>(challenge)?;
+    let data = query.send(packet.get_ref(), &addr)?;
+
+    Ok(data)
 }

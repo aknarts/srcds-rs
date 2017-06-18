@@ -1,10 +1,10 @@
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt};
 
 use ::ReadCString;
-use query::Query;
+use query::{Query, do_challenge_request};
 use error::{Error, Result};
 
-use std::io::{Cursor, Write};
+use std::io::Cursor;
 use std::net::ToSocketAddrs;
 
 // cid = challenge ID
@@ -28,24 +28,7 @@ pub struct PlayerInfo {
 
 impl Query {
     pub fn players<A: ToSocketAddrs>(&mut self, addr: A) -> Result<Players> {
-        let packet = Vec::with_capacity(9);
-        let mut packet = Cursor::new(packet);
-
-        packet.write_all(&PLAYER_CID_REQUEST_HEADER[..])?;
-        packet.write_i32::<LittleEndian>(-1)?;
-        let data = self.send(packet.get_ref(), &addr)?;
-        let mut data = Cursor::new(data);
-
-        let header = data.read_u8()?;
-        if header != 'A' as u8 {
-            return Err(Error::InvalidResponse);
-        }
-
-        let challenge = data.read_i32::<LittleEndian>()?;
-
-        packet.set_position(5);
-        packet.write_i32::<LittleEndian>(challenge)?;
-        let data = self.send(packet.get_ref(), &addr)?;
+        let data = do_challenge_request(self, addr, &PLAYER_CID_REQUEST_HEADER[..])?;
         let mut data = Cursor::new(data);
 
         let header = data.read_u8()?;
