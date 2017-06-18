@@ -5,6 +5,7 @@ use std::net::{UdpSocket, ToSocketAddrs};
 use error::{Error, Result};
 
 mod info;
+mod players;
 
 const SINGLE_PACKET: i32 = -1;
 const MULTI_PACKET: i32 = -2;
