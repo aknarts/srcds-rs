@@ -20,6 +20,6 @@ impl ReadCString for Cursor<Vec<u8>> {
             self.read(&mut buf)?;
             if buf[0] == 0 { break; } else { str_vec.push(buf[0]); }
         }
-        Ok(unsafe {String::from_utf8_unchecked(str_vec)})
+        Ok(String::from_utf8_lossy(&str_vec[..]).into_owned())
     }
 }
